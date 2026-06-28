@@ -13,6 +13,14 @@ interface MediaFile {
   lastModified: string | Date;
 }
 
+function ClientDate({ date }: { date: string | Date }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  return mounted ? <>{new Date(date).toLocaleDateString()}</> : null;
+}
+
 export default function MediaLibraryPage() {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +128,7 @@ export default function MediaLibraryPage() {
                 <p className="text-xs text-white truncate font-mono" title={file.name}>{file.name}</p>
                 <div className="flex justify-between items-center text-[10px] text-gray-600 font-mono mt-3">
                   <span>{(file.size / 1024).toFixed(1)} KB</span>
-                  <span>{new Date(file.lastModified).toLocaleDateString()}</span>
+                  <span><ClientDate date={file.lastModified} /></span>
                 </div>
               </div>
             </div>
