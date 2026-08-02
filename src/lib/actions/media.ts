@@ -4,12 +4,35 @@ import { PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aw
 import { r2Client } from '../r2';
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
+const HACKX_BUCKET_NAME = process.env.HACKX_R2_BUCKET_NAME || 'hackx-4';
 const PUBLIC_DOMAIN = process.env.R2_PUBLIC_DOMAIN!;
+const HACKX_PUBLIC_DOMAIN = process.env.HACKX_R2_PUBLIC_DOMAIN || process.env.R2_PUBLIC_DOMAIN!;
+
+function resolveBucket(bucketTypeOrName?: string, folder?: string): string {
+  if (bucketTypeOrName === 'hackx' || bucketTypeOrName === HACKX_BUCKET_NAME) return HACKX_BUCKET_NAME;
+  if (bucketTypeOrName === 'main' || bucketTypeOrName === BUCKET_NAME) return BUCKET_NAME;
+  if (bucketTypeOrName && bucketTypeOrName !== 'all') return bucketTypeOrName;
+  if (folder === 'hackx') return HACKX_BUCKET_NAME;
+  return BUCKET_NAME;
+}
+
+function resolvePublicDomain(bucketTypeOrName?: string, folder?: string): string {
+  if (bucketTypeOrName === 'hackx' || bucketTypeOrName === HACKX_BUCKET_NAME) return HACKX_PUBLIC_DOMAIN;
+  if (bucketTypeOrName === 'main' || bucketTypeOrName === BUCKET_NAME) return PUBLIC_DOMAIN;
+  if (folder === 'hackx') return HACKX_PUBLIC_DOMAIN;
+  return PUBLIC_DOMAIN;
+}
 
 export async function uploadMediaToR2Action(formData: FormData) {
   try {
     const file = formData.get('file') as File;
-    const folder = formData.get('folder') as string || 'media';
+    const bucketType = (formData.get('bucketType') as string) || (formData.get('bucket') as string);
+    const defaultFolder = bucketType === 'hackx' ? 'hackx' : 'media';
+    const folder = (formData.get('folder') as string) || defaultFolder;
+
+    const targetBucket = resolveBucket(bucketType, folder);
+    const targetDomain = resolvePublicDomain(bucketType, folder);
+
     if (!file) throw new Error('File not found');
 
     const bytes = await file.arrayBuffer();
@@ -19,52 +42,59 @@ export async function uploadMediaToR2Action(formData: FormData) {
     const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
 
     const uploadCommand = new PutObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: targetBucket,
       Key: fileName,
       Body: buffer,
       ContentType: file.type,
     });
 
     await r2Client.send(uploadCommand);
-    const publicUrl = `${PUBLIC_DOMAIN.replace(/\/$/, '')}/${fileName}`;
+    const publicUrl = `${targetDomain.replace(/\/$/, '')}/${fileName}`;
 
-    return { success: true, url: publicUrl, path: fileName };
+    return { success: true, url: publicUrl, path: fileName, bucket: targetBucket };
   } catch (e) {
     return { success: false, error: (e as Error).message };
   }
 }
 
-export async function listR2MediaFilesAction(folder = 'media') {
+export async function listR2MediaFilesAction(folder = 'all', bucketTypeOrName?: string) {
   try {
+    const targetBucket = resolveBucket(bucketTypeOrName, folder);
+    const targetDomain = resolvePublicDomain(bucketTypeOrName, folder);
+    const prefix = folder && folder !== 'all' ? `${folder}/` : undefined;
+
     const command = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
-      Prefix: `${folder}/`,
+      Bucket: targetBucket,
+      Prefix: prefix,
     });
 
     const response = await r2Client.send(command);
     const files = (response.Contents || [])
-      .filter(item => item.Key !== `${folder}/`) // Exclude folder root itself
+      .filter(item => item.Key && (prefix ? item.Key !== prefix : true) && !item.Key.endsWith('/'))
       .map(item => {
-        const publicUrl = `${PUBLIC_DOMAIN.replace(/\/$/, '')}/${item.Key}`;
+        const publicUrl = `${targetDomain.replace(/\/$/, '')}/${item.Key}`;
         return {
           name: item.Key?.split('/').pop() || '',
           key: item.Key || '',
           url: publicUrl,
           size: item.Size || 0,
           lastModified: item.LastModified || new Date(),
+          bucket: targetBucket,
         };
-      });
+      })
+      .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
 
-    return { success: true, files };
+    return { success: true, files, bucketName: targetBucket };
   } catch (e) {
     return { success: false, error: (e as Error).message, files: [] };
   }
 }
 
-export async function deleteMediaFromR2Action(path: string) {
+export async function deleteMediaFromR2Action(path: string, bucketTypeOrName?: string) {
   try {
+    const targetBucket = resolveBucket(bucketTypeOrName, path.startsWith('hackx/') ? 'hackx' : 'main');
     const deleteCommand = new DeleteObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: targetBucket,
       Key: path,
     });
 
@@ -74,3 +104,4 @@ export async function deleteMediaFromR2Action(path: string) {
     return { success: false, error: (e as Error).message };
   }
 }
+

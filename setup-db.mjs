@@ -90,6 +90,27 @@ await sql`
 `;
 console.log('team_members');
 
+await sql`
+  CREATE TABLE IF NOT EXISTS hackx_members (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name          VARCHAR(255) NOT NULL,
+    role          VARCHAR(255) NOT NULL,
+    image_url     TEXT NOT NULL,
+    "group"       VARCHAR(50) NOT NULL DEFAULT 'core',
+    year          VARCHAR(10) NOT NULL DEFAULT '2026',
+    email         VARCHAR(255),
+    linkedin_url  TEXT,
+    instagram_url TEXT,
+    github_url    TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active     BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMP NOT NULL DEFAULT NOW()
+  )
+`;
+await sql`ALTER TABLE hackx_members ADD COLUMN IF NOT EXISTS year VARCHAR(10) NOT NULL DEFAULT '2026';`;
+console.log('hackx_members');
+
 await sql`CREATE INDEX IF NOT EXISTS gallery_active_order_idx ON homepage_gallery_items (is_active, display_order)`;
 await sql`CREATE INDEX IF NOT EXISTS hero_images_hero_id_idx  ON homepage_hero_images (hero_id)`;
 await sql`CREATE INDEX IF NOT EXISTS hero_images_order_idx    ON homepage_hero_images (display_order)`;
@@ -97,7 +118,11 @@ await sql`CREATE INDEX IF NOT EXISTS events_status_order_idx  ON events (status,
 await sql`CREATE INDEX IF NOT EXISTS events_featured_idx      ON events (featured)`;
 await sql`CREATE INDEX IF NOT EXISTS team_group_order_idx     ON team_members ("group", display_order)`;
 await sql`CREATE INDEX IF NOT EXISTS team_active_idx          ON team_members (is_active)`;
+await sql`CREATE INDEX IF NOT EXISTS hackx_group_order_idx    ON hackx_members ("group", display_order)`;
+await sql`CREATE INDEX IF NOT EXISTS hackx_year_group_idx     ON hackx_members (year, "group", display_order)`;
+await sql`CREATE INDEX IF NOT EXISTS hackx_active_idx         ON hackx_members (is_active)`;
 console.log('✓ indexes');
 
 await sql.end();
 console.log('\nAll tables created successfully!');
+

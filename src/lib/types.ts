@@ -95,3 +95,41 @@ export interface NewTeamMember {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export type HackXGroup = 'core' | 'ec' | 'faculty' | 'convener';
+export type HackXYear = '2026' | '2025' | '2024';
+
+export interface HackXMember {
+  id: string;
+  name: string;
+  role: string;
+  imageUrl: string;
+  group: HackXGroup;
+  year: HackXYear;
+  email: string | null;
+  linkedinUrl: string | null;
+  instagramUrl: string | null;
+  githubUrl: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface NewHackXMember {
+  id?: string;
+  name?: string;
+  role?: string;
+  imageUrl?: string;
+  group?: HackXGroup;
+  year?: HackXYear;
+  email?: string | null;
+  linkedinUrl?: string | null;
+  instagramUrl?: string | null;
+  githubUrl?: string | null;
+  displayOrder?: number;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
