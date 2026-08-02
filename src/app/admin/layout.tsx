@@ -14,12 +14,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/login?error=unauthenticated');
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL ?? 'Administrator';
+  const userEmail = cookieStore.get('admin_email')?.value || process.env.ADMIN_EMAIL || 'Administrator';
 
   return (
     <div className="min-h-screen bg-[#080808] text-gray-200 flex font-sans">
       {/* Sidebar navigation */}
-      <Sidebar />
+      <Sidebar userEmail={userEmail} />
+
       
       {/* Main viewport */}
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
@@ -36,8 +37,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               </div>
               <div className="hidden sm:block text-left">
                 <p className="text-xs font-semibold text-white leading-tight font-sans">Administrator</p>
-                <p className="text-[10px] text-gray-500 truncate font-mono max-w-[180px]" title={adminEmail}>
-                  {adminEmail}
+                <p className="text-[10px] text-gray-500 truncate font-mono max-w-[180px]" title={userEmail}>
+                  {userEmail}
                 </p>
               </div>
             </div>

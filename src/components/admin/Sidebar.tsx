@@ -3,10 +3,20 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FileText, Image as ImageIcon, Sliders, Calendar, FolderOpen, Users } from 'lucide-react';
+import { LayoutDashboard, FileText, Image as ImageIcon, Sliders, Calendar, FolderOpen, Users, Sparkles } from 'lucide-react';
 
-export default function Sidebar() {
+interface SidebarProps {
+  userEmail?: string;
+}
+
+export default function Sidebar({ userEmail }: SidebarProps) {
   const pathname = usePathname();
+
+  const lowerEmail = (userEmail || '').toLowerCase();
+  const isHackXAuthorized =
+    lowerEmail.includes('vidhyanshu') ||
+    lowerEmail.includes('ronit') ||
+    lowerEmail.includes('tanmay');
 
   const links = [
     { label: 'Overview', href: '/admin', icon: LayoutDashboard },
@@ -14,6 +24,7 @@ export default function Sidebar() {
     { label: 'Hero overlay', href: '/admin/homepage/hero-images', icon: FileText },
     { label: 'Horizontal gallery', href: '/admin/homepage/gallery', icon: ImageIcon },
     { label: 'Team manager', href: '/admin/team', icon: Users },
+    ...(isHackXAuthorized ? [{ label: 'HackX manager', href: '/admin/hackx', icon: Sparkles }] : []),
     { label: 'Events manager', href: '/admin/events', icon: Calendar },
     { label: 'Media library', href: '/admin/media', icon: FolderOpen },
   ];
@@ -51,3 +62,4 @@ export default function Sidebar() {
     </aside>
   );
 }
+
